@@ -10,7 +10,7 @@ import (
 
 var schema graphql.Schema
 
-var aggregrateSchema = graphql.NewObject(graphql.ObjectConfig{Name: "RootQuery", Fields: graphql.Fields{
+var aggregateSchema = graphql.NewObject(graphql.ObjectConfig{Name: "RootQuery", Fields: graphql.Fields{
 	"club": model.SingleClubSchema(),
 	"list": model.ListClubSchema(),
 }})
@@ -31,7 +31,7 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 
 func init() {
 	schemaConfig := graphql.SchemaConfig{
-		Query:    aggregrateSchema,
+		Query:    aggregateSchema,
 		Mutation: aggregateMutations,
 	}
 	var err error
