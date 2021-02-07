@@ -147,13 +147,14 @@ func main() {
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
 	schemaConfig := graphql.SchemaConfig{
 		Query:    graphql.NewObject(rootQuery),
-		Mutation: mutationType}
+		Mutation: mutationType,
+	}
 	schema, err := graphql.NewSchema(schemaConfig)
 	if err != nil {
 		log.Fatalf("failed to create new schema, error : %v", err)
 	}
 
-	querys := []string{` { mutation {create(name:"Liverpool FC", location:"Liverpool") {name}}  }`,
+	querys := []string{` mutation {create(name:"Liverpool FC", location:"Liverpool") {name}}  `,
 		`{ list {name, players{lastname}}}`}
 
 	for _, query := range querys {
