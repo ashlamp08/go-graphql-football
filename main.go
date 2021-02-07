@@ -22,7 +22,7 @@ type Player struct {
 	PlayingClub int
 }
 
-func populate() []Club {
+func populate() map[int]Club {
 	player := &Player{
 		FirstName:   "Mason",
 		LastName:    "Mount",
@@ -38,7 +38,9 @@ func populate() []Club {
 		Players:  []Player{*player},
 	}
 
-	return []Club{*club}
+	m := map[int]Club{}
+	m[1] = *club
+	return m
 }
 
 func main() {
@@ -86,7 +88,7 @@ func main() {
 	var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
 		Fields: graphql.Fields{
-			"create": &graphql.Field{
+			"create_club": &graphql.Field{
 				Type:        clubType,
 				Description: "Create a new Club",
 				Args: graphql.FieldConfigArgument{
@@ -99,12 +101,50 @@ func main() {
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					club := Club{
+						Id:       len(clubs) + 1,
 						Name:     p.Args["name"].(string),
 						Location: p.Args["location"].(string),
 						Players:  []Player{},
 					}
-					clubs = append(clubs, club)
+					clubs[club.Id] = club
 					return club, nil
+				},
+			},
+			"create_player": &graphql.Field{
+				Type:        clubType,
+				Description: "Create a new Player",
+				Args: graphql.FieldConfigArgument{
+					"firstname": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+					"lastname": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+					"position": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+					"goals": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.Int),
+					},
+					"playingclub": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.Int),
+					},
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					player := Player{
+						FirstName:   p.Args["firstname"].(string),
+						LastName:    p.Args["lastname"].(string),
+						Position:    p.Args["position"].(string),
+						Goals:       p.Args["goals"].(int),
+						PlayingClub: p.Args["playingclub"].(int),
+					}
+					for _, club := range clubs {
+						if player.PlayingClub == club.Id {
+							club.Players = append(club.Players, player)
+							clubs[club.Id] = club
+						}
+					}
+					return player, nil
 				},
 			},
 		},
@@ -139,7 +179,11 @@ func main() {
 			Type:        graphql.NewList(clubType),
 			Description: "Get Club List",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return clubs, nil
+				var l []Club
+				for _, v := range clubs {
+					l = append(l, v)
+				}
+				return l, nil
 			},
 		},
 	}
@@ -154,8 +198,10 @@ func main() {
 		log.Fatalf("failed to create new schema, error : %v", err)
 	}
 
-	querys := []string{` mutation {create(name:"Liverpool FC", location:"Liverpool") {name}}  `,
-		`{ list {name, players{lastname}}}`}
+	querys := []string{` mutation {create_club(name:"Liverpool FC", location:"Liverpool") {name}}  `,
+		`{ list {name, players{lastname}}}`,
+		` mutation {create_player(firstname:"Prachet", lastname:"Sharma", position:"Forward", goals:7, playingclub:2) {name}}  `,
+		`{ list {name, players{firstname, lastname, goals}}}`}
 
 	for _, query := range querys {
 		params := graphql.Params{Schema: schema, RequestString: query}
