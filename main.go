@@ -4,21 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ashlamp08/go-graphql-football/model"
+	"github.com/ashlamp08/gogql"
 	"github.com/graphql-go/graphql"
 	"log"
 )
 
 var schema graphql.Schema
-
-var aggregateSchema = graphql.NewObject(graphql.ObjectConfig{Name: "RootQuery", Fields: graphql.Fields{
-	"club": model.SingleClubSchema(),
-	"list": model.ListClubSchema(),
-}})
-
-var aggregateMutations = graphql.NewObject(graphql.ObjectConfig{Name: "Mutation", Fields: graphql.Fields{
-	"create_club":   model.CreateClubMutation(),
-	"create_player": model.CreatePlayerMutation(),
-}})
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 	params := graphql.Params{Schema: schema, RequestString: query}
@@ -30,23 +21,18 @@ func executeQuery(query string, schema graphql.Schema) *graphql.Result {
 }
 
 func init() {
-	schemaConfig := graphql.SchemaConfig{
-		Query:    aggregateSchema,
-		Mutation: aggregateMutations,
-	}
-	var err error
-	schema, err = graphql.NewSchema(schemaConfig)
-	if err != nil {
-		log.Fatalf("failed to create new schema, error : %v", err)
-	}
+	schemaBuilder := gogql.NewSchemaBuilder()
+	schemaBuilder = model.SetupClubSchema(schemaBuilder)
+	schemaBuilder = model.SetupPlayerSchema(schemaBuilder)
+	schema = schemaBuilder.Build()
 }
 
 func main() {
 
 	querys := []string{` mutation {create_club(name:"Liverpool FC", location:"Liverpool") {name}}  `,
-		`{ list {name, players{lastname}}}`,
-		` mutation {create_player(firstname:"Prachet", lastname:"Sharma", position:"Forward", goals:7, playingclub:2) {name}}  `,
-		`{ list {name, players{firstname, lastname, goals}}}`}
+		`{ list {name, players{last_name}}}`,
+		` mutation {create_player(first_name:"Prachet", last_name:"Sharma", position:"Forward", goals:7, playing_club:2) {first_name}}  `,
+		`{ list {location, players{first_name, goals}}}`}
 
 	for _, query := range querys {
 		r := executeQuery(query, schema)

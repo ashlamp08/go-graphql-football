@@ -1,2 +1,4 @@
+github.com/ashlamp08/gogql v0.0.0-20210210160618-c0cadd586c01 h1:t7DdIUL+H5B9M7JO77ODJvbS0U//idqe44WSLwENvM0=
+github.com/ashlamp08/gogql v0.0.0-20210210160618-c0cadd586c01/go.mod h1:3FdzUhycr/N8ZWzVbAG+tLZ+kDk0X/oUD/R1h61rDH0=
 github.com/graphql-go/graphql v0.7.9 h1:5Va/Rt4l5g3YjwDnid3vFfn43faaQBq7rMcIZ0VnV34=
 github.com/graphql-go/graphql v0.7.9/go.mod h1:k6yrAYQaSP59DC5UVxbgxESlmVyojThKdORUqGDGmrI=

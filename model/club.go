@@ -1,33 +1,18 @@
 package model
 
-import "github.com/graphql-go/graphql"
+import (
+	"github.com/ashlamp08/gogql"
+	"github.com/graphql-go/graphql"
+)
 
 type Club struct {
-	Id       int
-	Name     string
-	Location string
-	Players  []Player
+	Id       int      `json:"id" unique:"true"`
+	Name     string   `json:"name"`
+	Location string   `json:"location"`
+	Players  []Player `json:"players"`
 }
 
-var clubs map[int]Club
-
-var clubType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Club",
-	Fields: graphql.Fields{
-		"id": &graphql.Field{
-			Type: graphql.Int,
-		},
-		"name": &graphql.Field{
-			Type: graphql.String,
-		},
-		"location": &graphql.Field{
-			Type: graphql.String,
-		},
-		"players": &graphql.Field{
-			Type: graphql.NewList(playerType),
-		},
-	},
-})
+var Clubs map[int]Club
 
 func init() {
 	player := &Player{
@@ -45,70 +30,44 @@ func init() {
 		Players:  []Player{*player},
 	}
 
-	clubs = map[int]Club{}
-	clubs[1] = *club
+	Clubs = map[int]Club{}
+	Clubs[1] = *club
 }
 
-func CreateClubMutation() *graphql.Field {
-	return &graphql.Field{
-		Type:        clubType,
-		Description: "Create a new Club",
-		Args: graphql.FieldConfigArgument{
-			"name": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.String),
-			},
-			"location": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.String),
-			},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			club := Club{
-				Id:       len(clubs) + 1,
-				Name:     p.Args["name"].(string),
-				Location: p.Args["location"].(string),
-				Players:  []Player{},
-			}
-			clubs[club.Id] = club
-			return club, nil
-		},
-	}
-}
+func SetupClubSchema(schemaBuilder *gogql.SchemaBuilder) *gogql.SchemaBuilder {
 
-func SingleClubSchema() *graphql.Field {
-	return &graphql.Field{
-		Type:        clubType,
-		Description: "Get Club by Id",
-		Args: graphql.FieldConfigArgument{
-			"id": &graphql.ArgumentConfig{
-				Type: graphql.Int,
-			},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			// take in the ID argument
-			id, ok := p.Args["id"].(int)
-			if ok {
-				// Parse our club array or matching id
-				for _, club := range clubs {
-					if int(club.Id) == id {
-						return club, nil
-					}
+	schemaBuilder = schemaBuilder.AddQueryAction("club", "Get club by Id", Club{}, func(p graphql.ResolveParams) (interface{}, error) {
+		// take in the ID argument
+		id, ok := p.Args["id"].(int)
+		if ok {
+			// Parse our club array or matching id
+			for _, club := range Clubs {
+				if int(club.Id) == id {
+					return club, nil
 				}
 			}
-			return nil, nil
-		},
-	}
-}
+		}
+		return nil, nil
+	})
 
-func ListClubSchema() *graphql.Field {
-	return &graphql.Field{
-		Type:        graphql.NewList(clubType),
-		Description: "Get Club List",
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			var l []Club
-			for _, v := range clubs {
-				l = append(l, v)
-			}
-			return l, nil
-		},
-	}
+	schemaBuilder = schemaBuilder.AddQueryAction("list", "Get club list", []Club{}, func(p graphql.ResolveParams) (interface{}, error) {
+		var l []Club
+		for _, v := range Clubs {
+			l = append(l, v)
+		}
+		return l, nil
+	})
+
+	schemaBuilder = schemaBuilder.AddMutationAction("create_club", "Create a club", Club{}, func(p graphql.ResolveParams) (interface{}, error) {
+		club := Club{
+			Id:       len(Clubs) + 1,
+			Name:     p.Args["name"].(string),
+			Location: p.Args["location"].(string),
+			Players:  []Player{},
+		}
+		Clubs[club.Id] = club
+		return club, nil
+	})
+
+	return schemaBuilder
 }
