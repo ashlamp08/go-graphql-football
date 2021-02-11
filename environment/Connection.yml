@@ -1,0 +1,12 @@
+app:
+  name: "EPL player data"
+  debug: true
+  port: "8080"
+  host: "localhost"
+  service: "http"
+  context:
+    timeout: 2
+databases:
+  mongodb:
+    name: "football"
+    connection: "mongodb://localhost:27017"

@@ -1,42 +1,38 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/ashlamp08/go-graphql-football/model"
+	"github.com/ashlamp08/go-graphql-football/football"
+	"github.com/ashlamp08/go-graphql-football/infrastructure"
 	"github.com/ashlamp08/gogql"
+	"github.com/go-chi/chi"
 	"github.com/graphql-go/graphql"
 	"log"
+	"net/http"
+	"net/url"
 )
 
 var schema graphql.Schema
 
-func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	params := graphql.Params{Schema: schema, RequestString: query}
-	r := graphql.Do(params)
-	if len(r.Errors) > 0 {
-		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
-	}
-	return r
-}
-
 func init() {
+	// initialize schema for GQL
 	schemaBuilder := gogql.NewSchemaBuilder()
-	schemaBuilder = model.SetupClubSchema(schemaBuilder)
-	schemaBuilder = model.SetupPlayerSchema(schemaBuilder)
+	schemaBuilder = football.SetupClubSchema(schemaBuilder)
+	schemaBuilder = football.SetupPlayerSchema(schemaBuilder)
 	schema = schemaBuilder.Build()
+
+	// initialize environment
+	val := url.Values{}
+	val.Add("parseTime", "1")
+	val.Add("loc", "Asia/Nepal")
+	env := infrastructure.Environment{}
+	env.SetEnvironment()
+	env.LoadConfig()
+	env.InitMongoDB()
 }
 
 func main() {
-
-	querys := []string{` mutation {create_club(name:"Liverpool FC", location:"Liverpool") {name}}  `,
-		`{ list {name, players{last_name}}}`,
-		` mutation {create_player(first_name:"Prachet", last_name:"Sharma", position:"Forward", goals:7, playing_club:2) {first_name}}  `,
-		`{ list {location, players{first_name, goals}}}`}
-
-	for _, query := range querys {
-		r := executeQuery(query, schema)
-		rJSON, _ := json.Marshal(r)
-		fmt.Printf("%s \n", rJSON)
-	}
+	routes := chi.NewRouter()
+	r := RegisterRoutes(routes)
+	log.Println("Server ready at 8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
