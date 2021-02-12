@@ -10,7 +10,7 @@ import (
 
 func GetClubById(ctx context.Context, id int) (result interface{}) {
 	var club Club
-	data := infrastructure.Mongodb.Collection("clublist").FindOne(ctx, bson.M{"id": id})
+	data := infrastructure.Mongodb.Collection("clublist").FindOne(ctx, bson.M{"_id": id})
 	data.Decode(&club)
 	return club
 }
@@ -35,6 +35,7 @@ func GetClubList(ctx context.Context, limit int) (result interface{}) {
 }
 
 func CreateClub(ctx context.Context, club Club) error {
+	club.Id, _ = getNextSequenceValue(context.Background(), "clubid")
 	_, err := infrastructure.Mongodb.Collection("clublist").InsertOne(ctx, club)
 	return err
 }
@@ -53,4 +54,24 @@ func UpdateClub(ctx context.Context, club Club) error {
 func DeleteClubById(ctx context.Context, id int) error {
 	_, err := infrastructure.Mongodb.Collection("clublist").DeleteOne(ctx, bson.M{"_id": id})
 	return err
+}
+
+func getNextSequenceValue(ctx context.Context, sequenceName string) (int32, error) {
+	filter := bson.M{"_id": sequenceName}
+	update := bson.M{"$inc": bson.M{"sequence_value": 1}}
+	upsertBool := true
+	after := options.After
+	updateOption := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert:         &upsertBool,
+	}
+	result := infrastructure.Mongodb.Collection("counters").FindOneAndUpdate(ctx, filter, update, &updateOption)
+	if result.Err() != nil {
+		return -1, result.Err()
+	}
+
+	// 9) Decode the result
+	doc := bson.M{}
+	decodeErr := result.Decode(&doc)
+	return doc["sequence_value"].(int32), decodeErr
 }
